@@ -147,7 +147,7 @@ st.sidebar.download_button(
     label="Download CSV", 
     data=generate_csv(),
     file_name="session_data.csv", 
-    mime="text/csv"")
+    mime="text/csv")
 
 # Auto-update countdown every second
 if len(st.session_state.samples) > 0:
