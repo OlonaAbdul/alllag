@@ -22,6 +22,24 @@ def load_data():
             if "sample_name" not in df.columns:
                 df.insert(0, "sample_name", df.index.astype(str))  # Use index as sample names
 
+            # Convert start_time to datetime and calculate remaining_time
+            df['start_time'] = pd.to_datetime(df['start_time'])
+            current_time = time.time()
+
+            # Recalculate remaining time for each sample based on current time
+            for idx, row in df.iterrows():
+                if row['status'] == 'Running':
+                    elapsed_time = current_time - row['start_time'].timestamp()
+                    # Adjust remaining time using updated pump speed
+                    if row['initial_pump_speed'] > 0:
+                        remaining_time = max(0, int(row['initial_lag_time'] * (row['initial_pump_speed'] / st.session_state.global_pump_speed) - elapsed_time))
+                        df.at[idx, 'remaining_time'] = remaining_time
+                    else:
+                        df.at[idx, 'remaining_time'] = row['remaining_time']  # Keep last known value if pump speed is zero
+
+                    if remaining_time == 0:
+                        df.at[idx, 'status'] = 'Completed'
+
             return df.set_index("sample_name").to_dict(orient="index")
 
         except Exception as e:
@@ -29,6 +47,7 @@ def load_data():
             return {}
 
     return {}  # If file doesn't exist, return empty data
+
 
 # Save session state to file
 # Save session state to file
