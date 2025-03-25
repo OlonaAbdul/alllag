@@ -83,6 +83,12 @@ if new_pump_speed != st.session_state.global_pump_speed:
 if st.sidebar.button("Pause" if not st.session_state.paused else "Resume"):
     st.session_state.paused = not st.session_state.paused
 
+if st.sidebar.button("Reset Session"):
+    st.session_state.samples = {}  # Clear all sample data
+    save_data()  # Overwrite the file with empty data
+    st.rerun()
+
+
 # Sidebar for Active Samples
 st.sidebar.header("Active Samples")
 for sample, data in st.session_state.samples.items():
