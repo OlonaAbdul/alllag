@@ -31,9 +31,18 @@ def load_data():
     return {}  # If file doesn't exist, return empty data
 
 # Save session state to file
+# Save session state to file
 def save_data():
+    # Convert start time to human-readable format
+    for sample, data in st.session_state.samples.items():
+        if "start_time" in data:
+            # Format the timestamp into a human-readable string
+            data["start_time_human_readable"] = datetime.datetime.fromtimestamp(data["start_time"]).strftime('%Y-%m-%d %H:%M:%S')
+    
+    # Create the dataframe and save it
     df = pd.DataFrame.from_dict(st.session_state.samples, orient="index")
     df.to_csv(data_file)
+
 
 # Function to generate a downloadable CSV file
 def generate_csv():
