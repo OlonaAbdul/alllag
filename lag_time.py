@@ -10,8 +10,25 @@ data_file = "lag_time_data.csv"
 # Load existing data if available
 def load_data():
     if os.path.exists(data_file):
-        return pd.read_csv(data_file).set_index("sample_name").to_dict(orient="index")
-    return {}
+        try:
+            df = pd.read_csv(data_file)
+
+            # ✅ Ensure at least one valid column exists before processing
+            if df.empty or len(df.columns) == 0:
+                st.warning("⚠️ CSV file is empty or corrupted. Initializing fresh data.")
+                return {}
+
+            # ✅ If "sample_name" is missing, create it from the index
+            if "sample_name" not in df.columns:
+                df.insert(0, "sample_name", df.index.astype(str))  # Use index as sample names
+
+            return df.set_index("sample_name").to_dict(orient="index")
+
+        except Exception as e:
+            st.error(f"Error loading data: {e}")
+            return {}
+
+    return {}  # If file doesn't exist, return empty data
 
 # Save session state to file
 def save_data():
@@ -147,7 +164,7 @@ st.sidebar.download_button(
     label="Download CSV", 
     data=generate_csv(),
     file_name="session_data.csv", 
-    mime="text/csv")
+    mime="text/csv"")
 
 # Auto-update countdown every second
 if len(st.session_state.samples) > 0:
