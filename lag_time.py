@@ -13,29 +13,25 @@ def load_data():
         try:
             df = pd.read_csv(data_file)
 
-            # ✅ Ensure at least one valid column exists before processing
+            # Ensure at least one valid column exists before processing
             if df.empty or len(df.columns) == 0:
                 st.warning("⚠️ CSV file is empty or corrupted. Initializing fresh data.")
                 return {}
 
-            # ✅ If "sample_name" is missing, create it from the index
             if "sample_name" not in df.columns:
                 df.insert(0, "sample_name", df.index.astype(str))  # Use index as sample names
 
-            # Convert start_time to datetime and calculate remaining_time
             df['start_time'] = pd.to_datetime(df['start_time'])
             current_time = time.time()
 
-            # Recalculate remaining time for each sample based on current time
             for idx, row in df.iterrows():
                 if row['status'] == 'Running':
                     elapsed_time = current_time - row['start_time'].timestamp()
-                    # Adjust remaining time using updated pump speed
                     if row['initial_pump_speed'] > 0:
                         remaining_time = max(0, int(row['initial_lag_time'] * (row['initial_pump_speed'] / st.session_state.global_pump_speed) - elapsed_time))
                         df.at[idx, 'remaining_time'] = remaining_time
                     else:
-                        df.at[idx, 'remaining_time'] = row['remaining_time']  # Keep last known value if pump speed is zero
+                        df.at[idx, 'remaining_time'] = row['remaining_time']
 
                     if remaining_time == 0:
                         df.at[idx, 'status'] = 'Completed'
@@ -46,18 +42,16 @@ def load_data():
             st.error(f"Error loading data: {e}")
             return {}
 
-    return {}  # If file doesn't exist, return empty data
+    return {}
 
-
-# Save session state to file
 # Save session state to file
 def save_data():
-    # Convert start time to human-readable format
     for sample, data in st.session_state.samples.items():
         if "start_time" in data:
-            # Format the timestamp into a human-readable string
             data["start_time_human_readable"] = datetime.datetime.fromtimestamp(data["start_time"]).strftime('%Y-%m-%d %H:%M:%S')
     
+    df = pd.DataFrame.from_dict(st.session_state.samples, orient="index")
+    df.to_csv(data_file)
     # Create the dataframe and save it
     df = pd.DataFrame.from_dict(st.session_state.samples, orient="index")
     df.to_csv(data_file)
@@ -69,12 +63,11 @@ def generate_csv():
     return df.to_csv(index=True).encode('utf-8')
 
 # Initialize session state
-if "samples" not in st.session_state:
-    st.session_state.samples = load_data()
-if "global_pump_speed" not in st.session_state:
-    st.session_state.global_pump_speed = 0.1  # Default pump speed
-if "paused" not in st.session_state:
-    st.session_state.paused = False
+if "samples" not in st.session_state or st.session_state.get('init', False) == False:
+    # Reset session for new user or new session
+    st.session_state.samples = {}
+    st.session_state.init = True  # Mark that session has been initialized
+    save_data()  # Initialize or reset the file data
 
 # Function to update countdowns in real-time
 def update_countdowns():
@@ -111,10 +104,12 @@ if new_pump_speed != st.session_state.global_pump_speed:
 if st.sidebar.button("Pause" if not st.session_state.paused else "Resume"):
     st.session_state.paused = not st.session_state.paused
 
+# Reset Button
 if st.sidebar.button("Reset Session"):
     st.session_state.samples = {}  # Clear all sample data
     save_data()  # Overwrite the file with empty data
-    st.rerun()
+    st.rerun()  # Force re-run to reset everything
+
 
 # Sidebar for Active Samples
 st.sidebar.header("Active Samples")
