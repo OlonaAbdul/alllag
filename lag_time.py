@@ -88,12 +88,21 @@ if st.sidebar.button("Reset Session"):
     save_data()  # Overwrite the file with empty data
     st.rerun()
 
-
 # Sidebar for Active Samples
 st.sidebar.header("Active Samples")
 for sample, data in st.session_state.samples.items():
     time_display = str(datetime.timedelta(seconds=int(data.get("remaining_time", 0))))
-    st.sidebar.write(f"{sample}: {time_display} ({data['status']})")
+    
+    # Progress Bar for Remaining Time
+    if data["status"] == "Running":
+        progress = int(100 * (1 - (data["remaining_time"] / data["initial_lag_time"])))
+        st.sidebar.progress(progress, text=f"Sample {sample} Progress: {time_display} ({data['status']})")
+        
+        # Color-coded Status Indicator
+        st.sidebar.markdown(f'<p style="color:red;">Sample {sample}: Running</p>', unsafe_allow_html=True)
+    else:
+        st.sidebar.markdown(f'<p style="color:green;">Sample {sample}: Completed</p>', unsafe_allow_html=True)
+
 
 # Input Form for Calculator
 st.header("Lag Time Calculator")
@@ -141,14 +150,19 @@ else:
 
 
 # Start Tracking Samples
+# Start Tracking Samples
 st.header("Start a New Sample Tracking")
 sample_name = st.text_input("Sample Name (e.g., Sample_3000ft)")
 if lag_time_seconds and st.button("Start Tracking"):
     if sample_name and sample_name not in st.session_state.samples:
+        # Convert start_time to a human-readable format
+        start_time_human_readable = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
+
         st.session_state.samples[sample_name] = {
             "initial_lag_time": lag_time_seconds,
             "status": "Running",
             "start_time": time.time(),
+            "start_time_human_readable": start_time_human_readable,  # Save the human-readable start time
             "remaining_time": lag_time_seconds,
             "initial_pump_speed": st.session_state.global_pump_speed,
             "ext_diameter_hwdp": ext_diameter_hwdp,
