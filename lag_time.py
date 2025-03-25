@@ -92,17 +92,19 @@ if st.sidebar.button("Reset Session"):
 st.sidebar.header("Active Samples")
 for sample, data in st.session_state.samples.items():
     time_display = str(datetime.timedelta(seconds=int(data.get("remaining_time", 0))))
-    
-    # Progress Bar for Remaining Time
+
+    # Make sure progress value is between 0 and 100
     if data["status"] == "Running":
-        progress = int(100 * (1 - (data["remaining_time"] / data["initial_lag_time"])))
-        st.sidebar.progress(progress, text=f"Sample {sample} Progress: {time_display} ({data['status']})")
+        remaining_ratio = data["remaining_time"] / data["initial_lag_time"]
+        progress = int(100 * (1 - min(max(remaining_ratio, 0), 1)))  # Ensure progress is between 0 and 100
         
+        # Display progress bar
+        st.sidebar.progress(progress, text=f"Sample {sample} Progress: {time_display} ({data['status']})")
+
         # Color-coded Status Indicator
         st.sidebar.markdown(f'<p style="color:red;">Sample {sample}: Running</p>', unsafe_allow_html=True)
     else:
         st.sidebar.markdown(f'<p style="color:green;">Sample {sample}: Completed</p>', unsafe_allow_html=True)
-
 
 # Input Form for Calculator
 st.header("Lag Time Calculator")
