@@ -69,6 +69,11 @@ if "samples" not in st.session_state or st.session_state.get('init', False) == F
     st.session_state.init = True  # Mark that session has been initialized
     save_data()  # Initialize or reset the file data
 
+# Initialize global_pump_speed if not already set
+if "global_pump_speed" not in st.session_state:
+    st.session_state.global_pump_speed = 1.0  # Set a default value, e.g., 1.0
+
+
 # Function to update countdowns in real-time
 def update_countdowns():
     current_time = time.time()
